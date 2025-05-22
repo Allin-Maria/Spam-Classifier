@@ -19,31 +19,40 @@ Original file is located at
 # Install streamlit if it's not already installed
 
 
-# streamlit_app.py
 import streamlit as st
 import pickle
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+import re
+import string
+
+# ✅ FIRST Streamlit command
+st.set_page_config(page_title="Spam Classifier", page_icon="📧", layout="centered")
+
+nltk.download('stopwords')
 
 # Load model and vectorizer
-# Ensure 'model.pkl' and 'vectorizer.pkl' exist in the same directory
-try:
-    model = pickle.load(open('model.pkl', 'rb'))
-    vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
-except FileNotFoundError:
-    st.error("Error: model.pkl or vectorizer.pkl not found. Please ensure these files are in the same directory.")
-    st.stop() # Stop the streamlit app if files are missing
+model = pickle.load(open('model.pkl', 'rb'))
+vectorizer = pickle.load(open('vectorizer.pkl', 'rb'))
 
+# Preprocessing function
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
+    tokens = text.split()
+    tokens = [word for word in tokens if word not in stopwords.words("english")]
+    stemmer = PorterStemmer()
+    tokens = [stemmer.stem(word) for word in tokens]
+    return " ".join(tokens)
 
-st.set_page_config(page_title="Spam vs Ham Classifier")
-st.title("📨 Spam vs Ham Email Classifier")
-st.write("Enter an email or message to classify it as spam or ham.")
+# Streamlit UI
+st.title("Spam Classifier")
+user_input = st.text_area("Enter a message:")
 
-# User input
-user_input = st.text_area("Your message here:")
+if st.button("Predict"):
+    cleaned = preprocess(user_input)
+    vect_text = vectorizer.transform([cleaned])
+    prediction = model.predict(vect_text)[0]
+    st.write("### Prediction:", "🚫 Spam" if prediction == "spam" else "✅ Not Spam")
 
-if st.button("Classify"):
-    if user_input.strip() == "":
-        st.warning("Please enter a message.")
-    else:
-        transformed = vectorizer.transform([user_input])
-        prediction = model.predict(transformed)[0]
-        st.success(f"🧠 Prediction: **{'Spam' if prediction == 'spam' else 'Ham'}**")
