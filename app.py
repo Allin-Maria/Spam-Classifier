@@ -17,7 +17,7 @@ Original file is located at
 """
 
 # Install streamlit if it's not already installed
-!pip install streamlit
+
 
 # streamlit_app.py
 import streamlit as st
